@@ -1,22 +1,34 @@
 package com.ttec.session;
 
+import java.util.Random;
+
 import org.joda.time.*;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 public class SessionObject {	
-	String PhoneNumber;
+	private String PhoneNumber;
 	//init - when the call is starting
 	//name - waiting for firstname	
 	//preintent - waiting for the customer to provide intent for the call
 	//postintent - we know what the intent of the calll is
 	//Goto:Channel:Destination - queue name or phonenumebr to be transfered to
 	//For example "Goto:Text:Customer Service" or   "Goto:Voice:Customer Service"
-	String State;
-	String Name;
-	String Intent;
+	private String State;
+	private String Name;
+	private String Intent;
+	private int RefNum;
 	
-	
+	public int getRefNum() {
+		return RefNum;
+	}
+
+
+	public void setRefNum(int refNum) {
+		RefNum = refNum;
+	}
+
+
 	public String getIntent() {
 		return Intent;
 	}
@@ -42,6 +54,7 @@ public class SessionObject {
 		PhoneNumber = phoneNumber;
 		State="init";
 		Intent="Customer Service";
+		RefNum=getRandomNumberInRange(300000,999999);
 	}
 	
 	
@@ -60,6 +73,14 @@ public class SessionObject {
 	}
 	public void setPhoneNumber(String phoneNumber) {
 		PhoneNumber = phoneNumber;
+	}
+	
+	private static int getRandomNumberInRange(int min, int max) {
+		if (min >= max) {
+			throw new IllegalArgumentException("max must be greater than min");
+		}
+		Random r = new Random();
+		return r.nextInt((max - min) + 1) + min;
 	}
 	
 }

@@ -81,7 +81,9 @@ public class voiceinit extends HttpServlet {
 			if(SessionObject.getName()!=null&&SessionObject.getName().length()>0) {
 				String Name=SessionObject.getName();
 				logger.info("Existing session. Name is: "+Name);
-				String TTS="Hello "+Name+". Welcome Back to T-TECH Utility.";					
+				String ref=SessionObject.getRefNum()+"";
+				ref=ref.replaceAll(".(?=.)", "$0 ");
+				String TTS="Hello "+Name+". Welcome to T-TECH Utility. Your Reference Number is <say-as interpret-as=\"digits\">"+ref+"</say-as>";					
 				logger.info("Buidling TTS Object to say: "+TTS);
 				Say say = new Say.Builder(TTS).voice(voiceObject).language(languageObject).build();
 				Buildeer.say(say);	
@@ -92,11 +94,11 @@ public class voiceinit extends HttpServlet {
 				Buildeer.say(say);	
 				
 				Play play = new Play.Builder("http://com.twilio.sounds.music.s3.amazonaws.com/MARKOVICHAMP-Borghestral.mp3").build();
-				Number number = new Number.Builder("415-123-4567")
-			            .sendDigits("wwww1928").build();
+				Number number = new Number.Builder("15122412500")
+			            .sendDigits(""+SessionObject.getRefNum()).build();
 			        Dial dial = new Dial.Builder().number(number).build();
 			        VoiceResponse  voiceResponse = new VoiceResponse.Builder().dial(dial).build();
-				Buildeer.play(play);		
+				Buildeer.dial(dial);
 			}else {
 				String TTS="Hi. Welcome to T-TECH Utilities.";					
 				logger.info("Buidling TTS Object to say: "+TTS);
@@ -128,7 +130,7 @@ public class voiceinit extends HttpServlet {
 		
 		SessionObject SessionObject=null;
 		
-		String Query="SELECT \"sessionId\", name, intent FROM public.\"Sessions\" where \"sessionId\" like '%"+PhoneNumber+"';";
+		String Query="SELECT \"sessionId\", name, intent, tag FROM public.\"Sessions\" where \"sessionId\" like '%"+PhoneNumber+"';";
 		logger.info(Query); 
 		ResultSet RS=JdbcConnection.ExecuteQuery(Query);
 		try {
@@ -136,6 +138,7 @@ public class voiceinit extends HttpServlet {
 				SessionObject = new SessionObject(RS.getString("sessionId"));
 				SessionObject.setName(RS.getString("name"));
 				SessionObject.setIntent(RS.getString("intent"));
+				SessionObject.setRefNum(RS.getInt("tag"));
 			}	
 				
 		} catch (SQLException e) {

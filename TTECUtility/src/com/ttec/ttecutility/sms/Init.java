@@ -52,13 +52,14 @@ public class Init extends HttpServlet {
 		try {
 			String fromNumber=request.getParameter("From");
 			String Body=request.getParameter("Body");
-			String AddOns=request.getParameter("AddOns");
+			String AddOns=request.getParameter("AddOns");			
 			DateTime localDateTime = new DateTime();
 			DateTimeZone dtz = DateTimeZone.forID("America/New_York");
 			logger.info("localDateTime : " + localDateTime.toString());
 
 
 			HttpSession session = request.getSession(true);
+			
 
 			//inacticity timer for session set to 1 hour
 			session.setMaxInactiveInterval(3600);
@@ -75,7 +76,7 @@ public class Init extends HttpServlet {
 			logger.info("Current StateName is: "+SessionObject.getState());	
 			logger.info("SMS from: "+fromNumber);
 
-			UpdateSessionDB(SessionObject.getPhoneNumber(), SessionObject.getName(), SessionObject.getIntent(), SessionObject.getState());
+			UpdateSessionDB(SessionObject.getPhoneNumber(), SessionObject.getName(), SessionObject.getIntent(), SessionObject.getState(),SessionObject.getRefNum());
 
 			Builder Buildeer=new MessagingResponse.Builder();       
 			Message sms=null;
@@ -166,8 +167,9 @@ public class Init extends HttpServlet {
 					String intent=SessionObject.getIntent();
 					SessionObject.setState("Goto:Voice:"+intent);
 					session.setAttribute("SessionObject_"+fromNumber, SessionObject);
-					sms = new Message.Builder().body(new Body.Builder("Ok. You prefer to talk to someone at "+intent+" departament. Please dial (647) 797-9897 within next 60 minutes from your current phone and we will continue the conversation there.\n"
-							+ "Thanks and talk to you soon.").build()).build();  
+					sms = new Message.Builder().body(new Body.Builder("Ok. You prefer to talk to someone at "+intent+" departament. Please dial 1 (678) 249-3797 within next 60 minutes from your current phone and we will continue the conversation there.\n"
+							+ "Your reference number for this conversation is "+SessionObject.getRefNum()+"\n"
+							+"Thanks and talk to you soon.").build()).build();  
 					Buildeer.message(sms);   
 
 				}else {
@@ -205,7 +207,7 @@ public class Init extends HttpServlet {
 				logger.info("Trying to collect intent now"); 
 				Buildeer.message(sms);      
 			}
-			UpdateSessionDB(SessionObject.getPhoneNumber(), SessionObject.getName(), SessionObject.getIntent(), SessionObject.getState());
+			UpdateSessionDB(SessionObject.getPhoneNumber(), SessionObject.getName(), SessionObject.getIntent(), SessionObject.getState(),SessionObject.getRefNum());
 			twiml=Buildeer.build();
 			response.setContentType("application/xml");
 			response.getWriter().print(twiml.toXml());
@@ -216,7 +218,7 @@ public class Init extends HttpServlet {
 			e.printStackTrace();
 		}
 	}
-	private void UpdateSessionDB(String PhoneNumber, String Name, String Intent, String State) {
+	private void UpdateSessionDB(String PhoneNumber, String Name, String Intent, String State, int RefNum) {
 		JdbcConnection JdbcConnection=new JdbcConnection();
 		if (State==null)State="";
 		if (Name==null)Name="";
@@ -226,7 +228,7 @@ public class Init extends HttpServlet {
 			String Query="DELETE FROM public.\"Sessions\" WHERE \"sessionId\"='"+PhoneNumber+"'";
 			logger.info(Query); 
 			JdbcConnection.executeUpdate(Query);
-			Query="INSERT INTO public.\"Sessions\"(\"sessionId\", name, intent) VALUES ('"+PhoneNumber+"','"+Name+"','"+Intent+"')";
+			Query="INSERT INTO public.\"Sessions\"(\"sessionId\", name, intent, tag) VALUES ('"+PhoneNumber+"','"+Name+"','"+Intent+"','"+RefNum+"')";
 			logger.info(Query); 
 			JdbcConnection.executeUpdate(Query); 
 
@@ -245,9 +247,15 @@ public class Init extends HttpServlet {
 		//arvand
 
 		Body=Body.toLowerCase();
+		
 		if(Body.indexOf("its ")==0) {
 			Body=Body.replace("its ", "");
 		}
+		
+		if(Body.indexOf("Sure!")>0) {
+			Body=Body.replace("Sure!", "");
+		}
+		Body=Body.replaceAll("[^a-zA-Z0-9]", " ");  
 
 		Body=Body.replace("my name is", "");
 		Body=Body.replace("the name is ", "");
